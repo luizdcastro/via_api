@@ -25,6 +25,7 @@ app.use(mongoSanitize());
 //Import Routes
 const dataRouter = require("./routes/dataRoute");
 const tableRoute = require("./routes/tableRoute");
+const budgetRoute = require("./routes/budgetRoute")
 
 //Connect to DB
 dotenv.config({ path: "./config.env" });
@@ -41,6 +42,7 @@ mongoose
 //Route Middlewares  
 app.use("/v1/data", dataRouter);
 app.use("/v1/table",  tableRoute);
+app.use("/v1/budget",  budgetRoute);
 
 //Start server
 const port = 8000;

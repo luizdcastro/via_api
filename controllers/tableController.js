@@ -1,11 +1,11 @@
 const Table = require('../models/tableModel');
-const factoty = require('./../controllers/factoryController.js');
+const factory = require('./../controllers/factoryController.js');
 const catchAsync = require('./../utils/catchAsync');
 
-exports.getTable = factoty.getOne(Table);
-exports.getAllTables = factoty.getAll(Table)
-exports.updateTable = factoty.updateOne(Table);
-exports.deleteTable = factoty.deleteOne(Table);
+exports.getTable = factory.getOne(Table);
+exports.getAllTables = factory.getAll(Table)
+exports.updateTable = factory.updateOne(Table);
+exports.deleteTable = factory.deleteOne(Table);
 
 exports.createTable = catchAsync(async (req, res, next) => {
 
