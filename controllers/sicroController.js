@@ -1,15 +1,15 @@
-const Table = require('../models/tableModel');
-const factory = require('./../controllers/factoryController.js');
-const catchAsync = require('./../utils/catchAsync');
+const Sicro = require('../models/sicroModel');
+const factory = require('./factoryController.js');
+const catchAsync = require('../utils/catchAsync');
 
-exports.getTable = factory.getOne(Table);
-exports.getAllTables = factory.getAll(Table)
-exports.updateTable = factory.updateOne(Table);
-exports.deleteTable = factory.deleteOne(Table);
+exports.getSicro = factory.getOne(Sicro);
+exports.getAllSicros = factory.getAll(Sicro)
+exports.updateSicro = factory.updateOne(Sicro);
+exports.deleteSicro = factory.deleteOne(Sicro);
 
-exports.createTable = catchAsync(async (req, res, next) => {
+exports.createSicro = catchAsync(async (req, res, next) => {
 
-    const request = req.body.table
+    const request = req.body.sicro
 
     let data = []
     let ids = []
@@ -29,7 +29,7 @@ exports.createTable = catchAsync(async (req, res, next) => {
         state.push(item.estado)
     }
 
-    const updates = await Table.find({ 'code': { $in: ids }, 'state': { $in: state } })
+    const updates = await Sicro.find({ 'code': { $in: ids }, 'state': { $in: state } })
 
     if (!!updates) {
         for (const item of updates) {
@@ -51,11 +51,11 @@ exports.createTable = catchAsync(async (req, res, next) => {
                 }
             );
         }
-        await Table.bulkWrite(bulkUpdate)
+        await Sicro.bulkWrite(bulkUpdate)
     }
 
     if (!!data) {
-        await Table.insertMany(data)
+        await Der.insertMany(data)
     }
 
     res.status(201).json({

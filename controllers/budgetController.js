@@ -1,5 +1,5 @@
 const Budget = require('../models/budgetModel');
-const Table = require('../models/tableModel');
+const Der = require('../models/derModel');
 const factory = require('./../controllers/factoryController.js');
 const catchAsync = require('./../utils/catchAsync');
 
@@ -28,11 +28,11 @@ exports.createBudget = catchAsync(async (req, res, next) => {
         ids.push(item.código)
     }
 
-    const updates = await Table.find({ 'arteris': { $in: ids }, 'state': 'SP' })
+    const updates = await Der.find({ 'arteris': { $in: ids }, 'state': 'PR' })
 
     if (!!updates) {
         for (const item of updates) {
-            const result = data.find(data => data.code == item.arteris && item.state == "SP")
+            const result = data.find(data => data.code == item.arteris && item.state == "PR")
             result.unit = item.price
             result.total = result.quant * item.price             
         }

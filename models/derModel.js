@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const tableSchema = new mongoose.Schema(
+const derSchema = new mongoose.Schema(
     {      
         code: {
             type: String,
@@ -32,4 +32,4 @@ const tableSchema = new mongoose.Schema(
     }
 );
 
-module.exports = mongoose.model("Table", tableSchema);
+module.exports = mongoose.model("DER", derSchema);

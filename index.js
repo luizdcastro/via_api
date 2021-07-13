@@ -23,9 +23,9 @@ app.use(express.json({limit: '50mb'}));
 app.use(mongoSanitize());
 
 //Import Routes
-const dataRouter = require("./routes/dataRoute");
-const tableRoute = require("./routes/tableRoute");
-const budgetRoute = require("./routes/budgetRoute")
+const derRoute = require("./routes/derRoute");
+const sicroRoute = require("./routes/sicroRoute");
+const budgetRoute = require("./routes/budgetRoute");
 
 //Connect to DB
 dotenv.config({ path: "./config.env" });
@@ -40,8 +40,8 @@ mongoose
     .then(() => console.log("DB connection successful!"));
 
 //Route Middlewares  
-app.use("/v1/data", dataRouter);
-app.use("/v1/table",  tableRoute);
+app.use("/v1/der",  derRoute);
+app.use("/v1/sicro",  sicroRoute);
 app.use("/v1/budget",  budgetRoute);
 
 //Start server
