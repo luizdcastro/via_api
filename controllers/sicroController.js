@@ -17,16 +17,16 @@ exports.createSicro = catchAsync(async (req, res, next) => {
     let bulkUpdate = []
     let updateList = []
 
-    for (const item of request) {
+    for (const item of request.table) {
         data.push({
             code: item.codigo,
             name: JSON.parse(JSON.stringify(item.nome).replace(/"\s+|\s+"/g, '"')),
             unit: item.unidade,
             price: item.preco,
-            state: item.estado
+            state: request.state.toUpperCase()
         })
         ids.push(item.codigo)
-        state.push(item.estado)
+        state.push(request.state.toUpperCase())
     }
 
     const updates = await Sicro.find({ 'code': { $in: ids }, 'state': { $in: state } })
@@ -55,7 +55,7 @@ exports.createSicro = catchAsync(async (req, res, next) => {
     }
 
     if (!!data) {
-        await Der.insertMany(data)
+        await Sicro.insertMany(data)
     }
 
     res.status(201).json({

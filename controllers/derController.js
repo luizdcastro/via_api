@@ -10,7 +10,6 @@ exports.deleteDer = factory.deleteOne(Der);
 exports.createDer = catchAsync(async (req, res, next) => {
 
     const request = req.body.der
-    console.log(request)
 
     let data = []
     let ids = []
