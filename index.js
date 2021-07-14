@@ -26,6 +26,8 @@ app.use(mongoSanitize());
 const derRoute = require("./routes/derRoute");
 const sicroRoute = require("./routes/sicroRoute");
 const budgetRoute = require("./routes/budgetRoute");
+const userRouter = require('./routes/userRoute');
+const authRouter = require("./routes/authRoute");
 
 //Connect to DB
 dotenv.config({ path: "./config.env" });
@@ -43,6 +45,8 @@ mongoose
 app.use("/v1/der",  derRoute);
 app.use("/v1/sicro",  sicroRoute);
 app.use("/v1/budget",  budgetRoute);
+app.use("/v1/user", userRouter);
+app.use("/v1/auth", authRouter);
 
 //Start server
 const port = 8000;
