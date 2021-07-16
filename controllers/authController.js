@@ -1,15 +1,19 @@
-const User = require("../models/userModel");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+const { promisify } = require('util');
+const jwt = require('jsonwebtoken');
+const User = require('./../models/userModel');
+const catchAsync = require('./../utils/catchAsync');
+const AppError = require('./../utils/appError');
+const sendEmail = require('./../utils/email');
+const crypto = require('crypto');
 
-function generateToken(params = {}) {
-	return jwt.sign(params, process.env.JWT_SECRET, {
+const signToken = (id) => {
+	return jwt.sign({ id }, process.env.JWT_SECRET, {
 		expiresIn: process.env.JWT_EXPIRES_IN,
 	});
-}
+};
 
 const createSendToken = (user, statusCode, res) => {
-	const token = generateToken(user._id);
+	const token = signToken(user._id);
 
 	const cookieOptions = {
 		expires: new Date(
@@ -20,7 +24,9 @@ const createSendToken = (user, statusCode, res) => {
 	};
 
 	if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+
 	res.cookie('jwt', token, cookieOptions);
+
 	user.password = undefined;
 
 	res.status(statusCode).json({
@@ -32,59 +38,54 @@ const createSendToken = (user, statusCode, res) => {
 	});
 };
 
-exports.register = async (req, res) => {
-	const { name, email, password, passwordConfirm } = req.body
+exports.signup = catchAsync(async (req, res, next) => {
+	const { name, email, password, passwordConfirm } = req.body;
+
+	if (!name || !email) {
+		return res.status(400).send({ error: "Por favor, informe seu nome e email." });
+	}
 
 	if (password !== passwordConfirm) {
-		return res.status(400).send({ error: "Confirmação de senha inválida" });
+		return res.status(400).send({ error: "A confirmação da senha está incorreta." });
 	}
 
 	if (password.length < 6) {
-		return res.status(400).send({ error: "Senha deve conter no mínimo de 6 digitos" });
+		return res.status(400).send({ error: "A senha deve ter no mínimo 6 digitos" })
 	}
 
 	const userEmail = await User.findOne({ email: req.body.email });
+
 	if (userEmail) {
-		return res.status(400).send({ error: `Email ${email} já cadastrado` });
+		return res.status(400).send({ error: `O email ${email} já está cadastrado.` })
 	}
 
-	let user;
-	user = await User.create({
+	const user = await User.create({
 		name: req.body.name,
 		email: req.body.email,
 		password: req.body.password,
 		passwordConfirm: req.body.passwordConfirm,
 	});
 
-	user.password = undefined;
+	await User.findById(user._id);
 
-	res.status(201).json({
-		status: "success",
-		data: user,
-		token: generateToken({ id: user.id }),
-	});
-};
+	createSendToken(user, 201, res);
+});
 
-exports.login = async (req, res, next) => {
+
+exports.login = catchAsync(async (req, res, next) => {
 	const { email, password } = req.body;
 	if (!email || !password) {
 		return res.status(400).send({ error: "Informe seu email e senha" });
 	}
 
-	const user = await User.findOne({ email }).select("+password");
+	const user = await User.findOne({ email }).select('+password');
 
-	if (!user || !(await bcrypt.compare(password, user.password))) {
+	if (!user || !(await user.correctPassword(password, user.password))) {
 		return res.status(401).send({ error: "Seu email ou senha estão incorretos" });
 	}
 
-	user.password = undefined;
-
-	res.status(200).json({
-		status: "success",
-		data: user,
-		token: generateToken({ id: user.id }),
-	});
-};
+	createSendToken(user, 200, res);
+});
 
 exports.protect = async (req, res, next) => {
 	let token;
@@ -103,4 +104,104 @@ exports.protect = async (req, res, next) => {
 	});
 
 	next();
+};
+
+exports.restrictToSubscriber = (...subscription) => {
+	return (req, res, next) => {
+		if (!subscription.includes(req.user.subscription)) {
+			return next(
+				new AppError('You do not have permission to perform this action', 403)
+			);
+		}
+
+		next();
+	};
+};
+
+exports.forgotPassword = catchAsync(async (req, res, next) => {
+	const user = await User.findOne({ cpf: req.body.cpf });
+	if (!user) {
+		return next(new AppError('There is no user with this cpf'));
+	}
+
+	const resetToken = user.createPasswordResetToken();
+	await user.save({ validateBeforeSave: false });
+
+	const resetURL = `https://rocketcab.herokuapp.com/reset-password/${resetToken}`;
+
+	const message = `Forgot your password? Submit your a PATCH request with your new password and passwordConfirm to ${resetURL}.\nIf you did not forget your password, please ignore this email`;
+
+	try {
+		await sendEmail({
+			email: user.email,
+			subject: 'Your password reset token',
+			message,
+		});
+
+		res.status(200).json({
+			status: 'success',
+			message,
+		});
+	} catch (err) {
+		console.log(err)
+		user.passwordResetToken = undefined;
+		user.passwordResetExpires = undefined;
+		await user.save({ validateBeforeSave: false });
+
+		return next(
+			new AppError('There was an error sending the email. Try again later!'),
+			500
+		);
+	}
+});
+
+exports.resetPassword = catchAsync(async (req, res, next) => {
+	const hashedToken = crypto
+		.createHash('sha256')
+		.update(req.params.token)
+		.digest('hex');
+
+	const user = await User.findOne({
+		passwordResetToken: hashedToken,
+		passwordResetExpires: { $gt: Date.now() },
+	});
+
+	if (!user) {
+		return next(new AppError('Token is invalid or has expired', 400));
+	}
+
+	user.password = req.body.password;
+	user.passwordConfirm = req.body.passwordConfirm;
+	user.passwordResetToken = undefined;
+	user.createPasswordResetToken = undefined;
+	await user.save();
+
+	createSendToken(user, 200, res);
+});
+
+exports.updatePassword = async (req, res, next) => {
+	const user = await User.findById(req.userId).select('+password');
+
+	if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
+		return res.status(400).send({ error: "A senha atual está incorreta." })
+	}
+
+	if (req.body.password !== req.body.passwordConfirm) {
+		return res.status(400).send({ error: "A confirmação da senha está incorreta." })
+	}
+
+	if (!req.body.password || !req.body.passwordConfirm) {
+		return res.status(400).send({ error: "Faltando preencher senha ou confirmação." })
+	}
+
+	if (req.body.password.length < 6) {
+		return res.status(400).send({ error: "A senha deve ter no mínimo 6 digitos." })
+	}
+
+	user.password = req.body.password;
+	user.passwordConfirm = req.body.passwordConfirm;
+
+	await user.save();
+
+	createSendToken(user, 200, res);
 };
