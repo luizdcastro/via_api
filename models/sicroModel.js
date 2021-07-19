@@ -17,7 +17,7 @@ const sicroSchema = new mongoose.Schema(
         state: {
             type: String,
         },
-        via_paulista: {
+        CCR: {
             type: String,
             default: ""
         },

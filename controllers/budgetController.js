@@ -29,8 +29,6 @@ exports.createBudget = catchAsync(async (req, res, next) => {
         ids.push(item.Código)
     }
 
-    console.log(request)
-
     if(request.company === 'arteris' & request.database === "der") {
         const updates = await Der.find({ 'arteris': { $in: ids }, 'state': request.state.toUpperCase() })
 
@@ -55,24 +53,24 @@ exports.createBudget = catchAsync(async (req, res, next) => {
         }
     }
     
-    if(request.company === 'via_paulista' & request.database === "der") {
-        const updates = await Der.find({ 'via_paulista': { $in: ids }, 'state': request.state.toUpperCase() })
+    if(request.company === 'CCR' & request.database === "der") {
+        const updates = await Der.find({ 'CCR': { $in: ids }, 'state': request.state.toUpperCase() })
 
         if (!!updates) {
             for (const item of updates) {
-                const result = data.find(data => data.Código == item.via_paulista && item.state == request.state.toUpperCase())
+                const result = data.find(data => data.Código == item.CCR && item.state == request.state.toUpperCase())
                 result.Unit = Number((request.tax / 100) * item.price) + Number(item.price)
                 result.Total = result.Quant * result.Unit                 
             }
         }
     }
 
-    if(request.company === 'via_paulista' & request.database === "sicro") {
-        const updates = await Sicro.find({ 'via_paulista': { $in: ids }, 'state': request.state.toUpperCase() })
+    if(request.company === 'CCR' & request.database === "sicro") {
+        const updates = await Sicro.find({ 'CCR': { $in: ids }, 'state': request.state.toUpperCase() })
 
         if (!!updates) {
             for (const item of updates) {
-                const result = data.find(data => data.Código == item.via_paulista && item.state == request.state.toUpperCase())
+                const result = data.find(data => data.Código == item.CCR && item.state == request.state.toUpperCase())
                 result.Unit = Number((request.tax / 100) * item.price) + Number(item.price)
                 result.Total = result.Quant * result.Unit                
             }
