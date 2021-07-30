@@ -75,6 +75,30 @@ exports.createBudget = catchAsync(async (req, res, next) => {
                 result.Total = result.Quant * result.Unit                
             }
         }
+    } 
+    
+    if(request.company === 'geral' & request.database === "der") {
+        const updates = await Der.find({ 'code': { $in: ids }, 'state': request.state.toUpperCase() })
+
+        if (!!updates) {
+            for (const item of updates) {
+                const result = data.find(data => data.Código == item.code && item.state == request.state.toUpperCase())
+                result.Unit = Number((request.tax / 100) * item.price) + Number(item.price)
+                result.Total = result.Quant * result.Unit                 
+            }
+        }
+    }
+
+    if(request.company === 'geral' & request.database === "sicro") {
+        const updates = await Sicro.find({ 'code': { $in: ids }, 'state': request.state.toUpperCase() })
+
+        if (!!updates) {
+            for (const item of updates) {
+                const result = data.find(data => data.Código == item.code && item.state == request.state.toUpperCase())
+                result.Unit = Number((request.tax / 100) * item.price) + Number(item.price)
+                result.Total = result.Quant * result.Unit                
+            }
+        }
     }   
 
     res.status(201).json({
